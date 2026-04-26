@@ -1,28 +1,48 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export const FichaPaciente = () => {
     const { store, dispatch } = useGlobalReducer();
     const p = store.pacienteActual;
     const navigate = useNavigate();
+    const [editando, setEditando] = useState(false);
+    const [formData, setFormData] = useState({});
+
+    useEffect(() => { if (p) setFormData(p); }, [p, editando]);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
+
+    const handleGuardarCambios = async () => {
+        const token = localStorage.getItem("token");
+        try {
+            const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/pacientes/${p.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify(formData)
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                dispatch({ type: "select_patient", payload: data });
+                setEditando(false);
+                alert("¡Datos actualizados!");
+            }
+        } catch (error) { console.error(error); }
+    };
 
     if (!p) {
         return (
-            <div className="container py-5">
-                <div className="row justify-content-center text-center">
-                    <div className="col-md-6">
-                        <div className="card border-0 shadow-sm p-5 rounded-4 bg-white">
-                            <i className="fas fa-user-injured fa-3x mb-3 text-muted"></i>
-                            <h4 className="fw-bold text-secondary">Consulta de Pacientes</h4>
-                            <p className="text-muted mb-4">Busca un paciente por nombre o DNI para ver su ficha clínica</p>
-
-                            <div className="d-flex justify-content-center">
-                                <BuscadorPacientes />
-                            </div>
-
-                        </div>
-                    </div>
+            <div className="container py-5 text-center">
+                <div className="card border-0 shadow-sm p-5 rounded-4 bg-white">
+                    <i className="fas fa-user-injured fa-3x mb-3 text-muted"></i>
+                    <h4 className="fw-bold text-secondary">Consulta de Pacientes</h4>
+                    <p className="text-muted mb-4">No hay un paciente seleccionado actualmente.</p>
+                    <button className="btn btn-primary" onClick={() => navigate("/pacientes")}>
+                        Ir al Directorio de Pacientes
+                    </button>
                 </div>
             </div>
         );
@@ -119,7 +139,7 @@ export const FichaPaciente = () => {
 
     return (
         <div className="container-fluid py-4 bg-light min-vh-100">
-           
+
             <button
                 className="btn shadow-sm d-flex align-items-center gap-2 px-4"
                 style={{
@@ -154,8 +174,15 @@ export const FichaPaciente = () => {
             <div className="d-flex justify-content-between align-items-center mb-4 p-4 rounded-4 shadow-sm bg-white border-start border-5 mt-3" style={{ borderColor: "#e8888c" }}>
                 <div>
                     <h2 className="mb-0 fw-bold" style={{ color: "#566873" }}>
-                        {p.nombre} {p.apellidos}
-                        {p.embarazo === "SI" && <i className="fas fa-baby ms-3 text-danger animate__animated animate__flash animate__infinite" title="EMBARAZADA"></i>}
+                        {editando ? (
+                            <div className="d-flex gap-2">
+                                <input name="nombre" className="form-control" value={formData.nombre || ""} onChange={handleInputChange} />
+                                <input name="apellidos" className="form-control" value={formData.apellidos || ""} onChange={handleInputChange} />
+                            </div>
+                        ) : (
+                            `${p.nombre} ${p.apellidos}`
+                        )}
+                        {p.embarazo === "SI" && <i className="fas fa-baby ms-3 text-danger animate__animated animate__flash animate__infinite"></i>}
                     </h2>
                     <div className="d-flex gap-2 mt-2">
                         <span className="badge px-3 py-2" style={{ backgroundColor: "#93bbbf" }}>Paciente Activo</span>
@@ -173,9 +200,17 @@ export const FichaPaciente = () => {
                 <div className="col-md-4">
                     <div className="p-3 rounded-4 bg-white shadow-sm border-bottom border-4" style={{ borderColor: "#93bbbf" }}>
                         <p className="small text-muted mb-0">Peso Actual</p>
-                        <h5 className="fw-bold mb-0">{p.peso || "--"} kg</h5>
+                        <h5 className="fw-bold mb-0">
+                            {editando ? (
+                                <input name="peso" type="number" className="form-control form-control-sm text-center fw-bold"
+                                    value={formData.peso || ""} onChange={handleInputChange} style={{ maxWidth: "100px", margin: "0 auto" }} />
+                            ) : (
+                                `${p.peso || "--"} kg`
+                            )}
+                        </h5>
                     </div>
                 </div>
+                {/* ... Edad e IMC se calculan, así que los dejamos solo lectura ... */}
                 <div className="col-md-4">
                     <div className="p-3 rounded-4 bg-white shadow-sm border-bottom border-4" style={{ borderColor: saludable ? "#28a745" : "#ffc107" }}>
                         <p className="small text-muted mb-0">Objetivo Saludable</p>
@@ -185,6 +220,7 @@ export const FichaPaciente = () => {
                 <div className="col-md-4">
                     <div className="p-3 rounded-4 bg-white shadow-sm border-bottom border-4" style={{ borderColor: "#566873" }}>
                         <p className="small text-muted mb-0">Edad</p>
+                        {/* Usamos el valor calculado que ya tienes o el del paciente */}
                         <h5 className="fw-bold mb-0">{p.edad || "--"} años</h5>
                     </div>
                 </div>
@@ -192,21 +228,42 @@ export const FichaPaciente = () => {
 
             <div className="row g-3 mb-4 text-center">
                 <div className="col-md-4">
-                    <div className={`p-3 rounded-4 bg-white shadow-sm border-bottom border-4 ${parseInt(p.tension) > 140 ? 'border-danger' : 'border-info'}`}>
+                    <div className={`p-3 rounded-4 bg-white shadow-sm border-bottom border-4 ${parseInt(editando ? formData.tension : p.tension) > 140 ? 'border-danger' : 'border-info'}`}>
                         <p className="small text-muted mb-0">Tensión Arterial</p>
-                        <h5 className="fw-bold mb-0">{p.tension || "--"}</h5>
+                        <h5 className="fw-bold mb-0">
+                            {editando ? (
+                                <input name="tension" className="form-control form-control-sm text-center fw-bold"
+                                    value={formData.tension || ""} onChange={handleInputChange} style={{ maxWidth: "100px", margin: "0 auto" }} />
+                            ) : (
+                                p.tension || "--"
+                            )}
+                        </h5>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className={`p-3 rounded-4 bg-white shadow-sm border-bottom border-4 ${parseFloat(p.glucosa) > 180 ? 'border-danger mi-alerta-viva' : 'border-success'}`}>
+                    <div className={`p-3 rounded-4 bg-white shadow-sm border-bottom border-4 ${parseFloat(editando ? formData.glucosa : p.glucosa) > 180 ? 'border-danger mi-alerta-viva' : 'border-success'}`}>
                         <p className="small text-muted mb-0">Glucosa</p>
-                        <h5 className="fw-bold mb-0">{p.glucosa || "--"} mg/dL</h5>
+                        <h5 className="fw-bold mb-0">
+                            {editando ? (
+                                <input name="glucosa" type="number" className="form-control form-control-sm text-center fw-bold"
+                                    value={formData.glucosa || ""} onChange={handleInputChange} style={{ maxWidth: "100px", margin: "0 auto" }} />
+                            ) : (
+                                `${p.glucosa || "--"} mg/dL`
+                            )}
+                        </h5>
                     </div>
                 </div>
                 <div className="col-md-4">
-                    <div className={`p-3 rounded-4 bg-white shadow-sm border-bottom border-4 ${p.spo2 < 94 && p.spo2 > 0 ? 'border-warning' : 'border-primary'}`}>
+                    <div className={`p-3 rounded-4 bg-white shadow-sm border-bottom border-4 ${(editando ? formData.spo2 : p.spo2) < 94 && (editando ? formData.spo2 : p.spo2) > 0 ? 'border-warning' : 'border-primary'}`}>
                         <p className="small text-muted mb-0">Saturación O2</p>
-                        <h5 className="fw-bold mb-0">{p.spo2 || "--"}%</h5>
+                        <h5 className="fw-bold mb-0">
+                            {editando ? (
+                                <input name="spo2" type="number" className="form-control form-control-sm text-center fw-bold"
+                                    value={formData.spo2 || ""} onChange={handleInputChange} style={{ maxWidth: "100px", margin: "0 auto" }} />
+                            ) : (
+                                `${p.spo2 || "--"}%`
+                            )}
+                        </h5>
                     </div>
                 </div>
             </div>
@@ -223,14 +280,36 @@ export const FichaPaciente = () => {
                             <ul className="list-group list-group-flush">
                                 <li className="list-group-item px-0 py-2 border-bottom">
                                     <span className="text-muted small d-block">DNI / NIE</span>
-                                    <span className="fw-bold">{p.dni}</span>
+                                    {editando ? (
+                                        <input name="dni" className="form-control form-control-sm fw-bold" value={formData.dni || ""} onChange={handleInputChange} />
+                                    ) : (
+                                        <span className="fw-bold">{p.dni}</span>
+                                    )}
                                 </li>
-                                <li className="list-group-item px-0 py-3 border-bottom"><span className="text-muted small d-block">Email</span><span className="fw-bold">{p.email}</span></li>
-                                <li className="list-group-item px-0 py-3 border-bottom"><span className="text-muted small d-block">Teléfono</span><span className="fw-bold" style={{ color: "#e8888c" }}>{p.telefono}</span></li>
-                                <li className="list-group-item px-0 py-3 border-0"><span className="text-muted small d-block">Dirección</span><span className="small fw-semibold">{p.direccion}, {p.ciudad}</span></li>
-                                <li className="list-group-item px-0 py-2 border-bottom">
-                                    <span className="text-muted small d-block">Fecha de Nacimiento</span>
-                                    <span className="fw-bold">{p.nacimiento || "No registrada"}</span>
+                                <li className="list-group-item px-0 py-3 border-bottom">
+                                    <span className="text-muted small d-block">Email</span>
+                                    {editando ? (
+                                        <input name="email" className="form-control form-control-sm" value={formData.email || ""} onChange={handleInputChange} />
+                                    ) : (
+                                        <span className="fw-bold">{p.email}</span>
+                                    )}
+                                </li>
+                                <li className="list-group-item px-0 py-3 border-bottom">
+                                    <span className="text-muted small d-block">Teléfono</span>
+                                    {editando ? (
+                                        <input name="telefono" className="form-control form-control-sm" value={formData.telefono || ""} onChange={handleInputChange} />
+                                    ) : (
+                                        <span className="fw-bold" style={{ color: "#e8888c" }}>{p.telefono}</span>
+                                    )}
+                                </li>
+                                <li className="list-group-item px-0 py-3 border-0">
+                                    <span className="text-muted small d-block">Dirección</span>
+                                    {editando ? (
+                                        <input name="direccion" className="form-control form-control-sm mb-1" placeholder="Calle..." value={formData.direccion || ""} onChange={handleInputChange} />
+                                    ) : (
+                                        <span className="small fw-semibold">{p.direccion}, {p.ciudad}</span>
+                                    )}
+                                    {editando && <input name="ciudad" className="form-control form-control-sm" placeholder="Ciudad" value={formData.ciudad || ""} onChange={handleInputChange} />}
                                 </li>
                             </ul>
                         </div>
@@ -257,73 +336,143 @@ export const FichaPaciente = () => {
                             <div className="card border-0 shadow-sm h-100 rounded-4" style={{ backgroundColor: "#b4d2d9" }}>
                                 <div className="card-body text-center d-flex flex-column justify-content-center">
                                     <h6 className="fw-bold mb-1" style={{ color: "#566873" }}>Grupo Sanguíneo</h6>
-                                    <h2 className="mb-0 fw-black display-5" style={{ color: "#566873" }}>{p.grupoSanguineo || "--"}</h2>
+                                    {editando ? (
+                                        <select name="grupoSanguineo" className="form-select form-select-lg fw-bold text-center mx-auto" style={{ maxWidth: "120px", color: "#566873" }} value={formData.grupoSanguineo || ""} onChange={handleInputChange}>
+                                            <option value="">--</option>
+                                            <option value="A+">A+</option>
+                                            <option value="A-">A-</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B-">B-</option>
+                                            <option value="O+">O+</option>
+                                            <option value="O-">O-</option>
+                                            <option value="AB+">AB+</option>
+                                            <option value="AB-">AB-</option>
+                                        </select>
+                                    ) : (
+                                        <h2 className="mb-0 fw-black display-5" style={{ color: "#566873" }}>{p.grupoSanguineo || "--"}</h2>
+                                    )}
                                 </div>
                             </div>
                         </div>
-
                         <div className="col-12 mb-3">
                             <div className="card border-0 shadow-sm rounded-4">
-                                <div className="card-header py-3 text-white border-0" style={{ backgroundColor: "#93bbbf" }}>
+                                <div className="card-header py-3 text-white border-0 d-flex justify-content-between align-items-center" style={{ backgroundColor: "#93bbbf" }}>
                                     <h6 className="mb-0 fw-bold"><i className="fas fa-history me-2"></i> ANTECEDENTES MÉDICOS</h6>
+                                    {!editando && (
+                                        <button className="btn btn-sm btn-light text-dark fw-bold rounded-pill px-3 d-print-none shadow-sm" onClick={() => setEditando(true)}>
+                                            <i className="fas fa-edit me-1"></i> Editar
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="card-body bg-white p-4">
                                     <div className="p-3 rounded-3 bg-light" style={{ minHeight: "100px", borderLeft: "4px solid #93bbbf" }}>
-                                        <p className="text-secondary mb-0" style={{ lineHeight: "1.6", whiteSpace: "pre-line" }}>{p.antecedentes || "Sin antecedentes registrados."}</p>
+                                        {editando ? (
+                                            <textarea
+                                                name="antecedentes"
+                                                className="form-control border-0 bg-transparent text-secondary"
+                                                rows="4"
+                                                style={{ lineHeight: "1.6" }}
+                                                value={formData.antecedentes || ""}
+                                                onChange={handleInputChange}
+                                                placeholder="Escriba los antecedentes aquí..."
+                                            />
+                                        ) : (
+                                            <p className="text-secondary mb-0" style={{ lineHeight: "1.6", whiteSpace: "pre-line" }}>
+                                                {p.antecedentes || "Sin antecedentes registrados."}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        {/* PLAN DE TRATAMIENTO */}
                         <div className="col-12 mb-3">
                             <div className="card border-0 shadow-sm rounded-4 overflow-hidden border-start border-5" style={{ borderColor: "#5e888c" }}>
                                 <div className="card-header py-3 text-white border-0 d-flex justify-content-between align-items-center" style={{ backgroundColor: "#5e888c" }}>
-                                    <h6 className="mb-0 fw-bold"><i className="fas fa-prescription me-2"></i> PLAN DE TRATAMIENTO</h6>
-                                    <button className="btn btn-sm btn-light text-dark fw-bold rounded-pill px-3 d-print-none" onClick={() => alert("✅ Guardado")}>Confirmar y Guardar</button>
+                                    <h6 className="mb-0 fw-bold"><i className="fas fa-prescription me-2"></i> PLAN DE TRATAMIENTO (RECETA)</h6>
+                                    {editando && <span className="badge bg-white text-dark">Modo Edición</span>}
                                 </div>
                                 <div className="card-body bg-white p-4">
-                                    <textarea className="form-control border-0 bg-light p-3 fw-bold" style={{ color: "#566873", fontSize: "1.1rem", minHeight: "120px" }} defaultValue={p.tratamiento || ""} placeholder="Escriba la receta aquí..." />
+                                    {editando ? (
+                                        <textarea
+                                            name="anotaciones"
+                                            className="form-control border-0 bg-light p-3 fw-bold"
+                                            style={{ color: "#566873", fontSize: "1.1rem", minHeight: "120px" }}
+                                            value={formData.anotaciones || ""}
+                                            onChange={handleInputChange}
+                                            placeholder="Escriba la prescripción aquí..."
+                                        />
+                                    ) : (
+                                        <div className="p-3 bg-light rounded-3" style={{ minHeight: "120px" }}>
+                                            <p className="fw-bold mb-0" style={{ color: "#566873", fontSize: "1.1rem", whiteSpace: "pre-line" }}>
+                                                {p.anotaciones || "Sin prescripción actual."}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="col-12">
-                            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                                <div className="card-header py-3 text-white border-0" style={{ backgroundColor: "#566873" }}>
-                                    <h6 className="mb-0 fw-bold"><i className="fas fa-notes-medical me-2"></i> NOTAS DE EVOLUCIÓN</h6>
-                                </div>
-                                <div className="card-body bg-white p-4">
-                                    <p className="text-secondary mb-4">{p.anotaciones || "No hay notas registradas."}</p>
-                                    <hr />
-                                    <div className="d-flex flex-wrap gap-3 justify-content-end d-print-none">
+                        {/* BOTONES DE ACCIÓN PRINCIPALES */}
+                        <div className="container d-print-none mt-5 mb-5">
+                            <div className="d-flex flex-wrap gap-3 justify-content-center align-items-center p-4 rounded-4 bg-white shadow-sm border">
+
+                                {!editando ? (
+                                    <>
                                         <button
-                                            className="btn px-4 btn-outline-secondary"
-                                            style={{ borderRadius: "10px" }}
-                                            onClick={() => navigate("/healthform")}
+                                            className="btn shadow-sm text-white px-4 fw-bold d-flex align-items-center justify-content-center"
+                                            style={{ backgroundColor: "#93bbbf", borderRadius: "50px", height: "50px", minWidth: "180px", border: "none" }}
+                                            onClick={() => navigate("/healthform", { state: { pacienteAEditar: p } })}
                                         >
-                                            Editar Ficha
+                                            <i className="fas fa-edit me-2"></i> EDITAR FICHA
                                         </button>
-                                        <button className="btn px-4 text-white" style={{ backgroundColor: "#e8888c", borderRadius: "10px" }} onClick={() => navigate("/areapersonal", { state: { pacienteId: p.id, nombre: p.nombre } })}>Nueva Consulta</button>
-                                        <button className="btn px-4 text-white" style={{ backgroundColor: "#566873", borderRadius: "10px" }} onClick={() => window.print()}>Generar Informe</button>
+
                                         <button
-                                            className="btn btn-outline-danger rounded-pill px-3 shadow-sm"
+                                            className="btn shadow-sm text-white px-4 fw-bold d-flex align-items-center justify-content-center"
+                                            style={{ backgroundColor: "#566873", borderRadius: "50px", height: "50px", minWidth: "180px", border: "none" }}
+                                            onClick={() => window.print()}
+                                        >
+                                            <i className="fas fa-print me-2"></i> INFORME
+                                        </button>
+
+                                        {/* BOTÓN ELIMINAR RECUPERADO */}
+                                        <button
+                                            className="btn btn-outline-danger shadow-sm px-4 fw-bold d-flex align-items-center justify-content-center"
+                                            style={{ borderRadius: "50px", height: "50px", minWidth: "180px", borderWidth: "2px" }}
                                             onClick={() => handleEliminarDesdeFicha(p.id)}
                                         >
-                                            <i className="fas fa-trash-alt me-2"></i>Eliminar Paciente
+                                            <i className="fas fa-trash-alt me-2"></i> ELIMINAR
                                         </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="d-none d-print-block w-100">
-                                <div style={{ height: "100px" }}></div>
 
-                                <div className="d-flex justify-content-end">
-                                    <div className="text-center" style={{ width: "300px" }}>
-                                        <div style={{ borderTop: "2px solid #000", marginBottom: "8px" }}></div>
-                                        <p className="fw-bold mb-0">Firma y Sello del Facultativo</p>
-                                        <p className="small text-muted mb-0">Nº Colegiado: ________________</p>
-                                        <p className="small">Fecha: {new Date().toLocaleDateString()}</p>
-                                    </div>
+                                        <button
+                                            className="btn shadow-sm text-white px-4 fw-bold d-flex align-items-center justify-content-center"
+                                            style={{ backgroundColor: "#e8888c", borderRadius: "50px", height: "50px", minWidth: "200px", border: "none" }}
+                                            onClick={() => navigate("/areapersonal", { state: { pacienteId: p.id, nombre: p.nombre } })}
+                                        >
+                                            <i className="fas fa-calendar-plus me-2"></i> NUEVA CONSULTA
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button className="btn btn-success shadow-sm px-5 fw-bold" style={{ borderRadius: "50px", height: "50px" }} onClick={handleGuardarCambios}>
+                                            GUARDAR CAMBIOS
+                                        </button>
+                                        <button className="btn btn-light shadow-sm px-5 fw-bold ms-2" style={{ borderRadius: "50px", height: "50px", border: "1px solid #ddd" }} onClick={() => setEditando(false)}>
+                                            CANCELAR
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* FIRMA (Solo para impresión) */}
+                        <div className="d-none d-print-block w-100 mt-5">
+                            <div className="d-flex justify-content-end">
+                                <div className="text-center" style={{ width: "300px" }}>
+                                    <div style={{ borderTop: "2px solid #000", marginBottom: "8px" }}></div>
+                                    <p className="fw-bold mb-0">Firma y Sello del Facultativo</p>
+                                    <p className="small">Fecha: {new Date().toLocaleDateString()}</p>
                                 </div>
                             </div>
                         </div>

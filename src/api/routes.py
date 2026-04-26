@@ -210,32 +210,58 @@ def get_appointment_detail(id):
 @api.route('/pacientes/<int:id>', methods=['PUT'])
 @jwt_required()
 def update_patient(id):
-    paciente = db.session.get(Patient, id)
-    if not paciente:
-        return jsonify({"msg": "No encontrado"}), 404
-
-    data = request.get_json()
-    for key, value in data.items():
-        if hasattr(paciente, key):
-            setattr(paciente, key, value)
-
-    db.session.commit()
-    return jsonify({"msg": "Paciente actualizado"}), 200
-
-@api.route('/pacientes/<int:id>', methods=['DELETE'])
-@jwt_required()
-def delete_patient(id):
-    paciente = db.session.get(Patient, id)
+    paciente = Patient.query.get(id)
     if not paciente:
         return jsonify({"msg": "Paciente no encontrado"}), 404
 
+    data = request.get_json()
+    
+    def clean_num(val):
+        if val is None or str(val).strip() in ["", "--"]:
+            return None
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return None
+
     try:
-        db.session.delete(paciente)
+        # Identidad
+        paciente.nombre = data.get("nombre", paciente.nombre)
+        paciente.apellidos = data.get("apellidos", paciente.apellidos)
+        paciente.email = data.get("email", paciente.email)
+        paciente.telefono = data.get("telefono", paciente.telefono)
+        paciente.nacimiento = data.get("nacimiento", paciente.nacimiento)
+        paciente.dni = data.get("dni", paciente.dni)
+        
+        # Físico (Asegúrate de que 'altura' existe en tu models.py)
+        paciente.peso = clean_num(data.get("peso")) if "peso" in data else paciente.peso
+        paciente.altura = clean_num(data.get("altura")) if "altura" in data else paciente.altura
+        paciente.glucosa = clean_num(data.get("glucosa")) if "glucosa" in data else paciente.glucosa
+        paciente.spo2 = clean_num(data.get("spo2")) if "spo2" in data else paciente.spo2
+        paciente.tension = data.get("tension", paciente.tension)
+        paciente.grupo_sanguineo = data.get("grupoSanguineo", paciente.grupo_sanguineo)
+        
+        # Riesgos y Alergias
+        paciente.embarazo = data.get("embarazo", paciente.embarazo)
+        paciente.alergia_penicilina = data.get("alergia_penicilina", paciente.alergia_penicilina)
+        paciente.alergia_latex = data.get("alergia_latex", paciente.alergia_latex)
+        paciente.alergia_aines = data.get("alergia_aines", paciente.alergia_aines)
+        paciente.alergia_otros = data.get("alergia_otros", paciente.alergia_otros)
+        
+        # Historial (HE ELIMINADO 'antecedentes' porque no está en tu modelo)
+        paciente.hepatitis = data.get("hepatitis", paciente.hepatitis)
+        paciente.tuberculosis = data.get("tuberculosis", paciente.tuberculosis)
+        paciente.vih = data.get("vih", paciente.vih)
+        paciente.anotaciones = data.get("anotaciones", paciente.anotaciones)
+
         db.session.commit()
-        return jsonify({"msg": "Paciente eliminado correctamente"}), 200
+        return jsonify(paciente.serialize()), 200
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Error al eliminar", "error": str(e)}), 500
+        # Esto imprimirá el error real en tu terminal para que lo veas
+        print(f"Error detectado: {str(e)}") 
+        return jsonify({"msg": "Error al actualizar", "error": str(e)}), 500
 
 @api.route('/appointments', methods=['GET'])
 def get_all_appointment():
