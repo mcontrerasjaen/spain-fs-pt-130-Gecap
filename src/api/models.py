@@ -46,6 +46,8 @@ class Patient(db.Model):
     dni: Mapped[str] = mapped_column(String(20), unique=True, nullable=True)
     email: Mapped[str] = mapped_column(String(120), nullable=True)
     telefono: Mapped[str] = mapped_column(String(20), nullable=True)
+    direccion: Mapped[str] = mapped_column(String(255), nullable=True)
+    ciudad: Mapped[str] = mapped_column(String(100), nullable=True)
     nacimiento: Mapped[str] = mapped_column(String(20), nullable=True)
     appointments: Mapped[List["Appointment"]] = relationship(
         back_populates="patient", 
@@ -85,6 +87,8 @@ class Patient(db.Model):
             "dni": self.dni,
             "email": self.email,
             "telefono": self.telefono,
+            "direccion": self.direccion,
+            "ciudad": self.ciudad,   
             "nacimiento": self.nacimiento,
             "peso": self.peso,
             "altura": self.altura,

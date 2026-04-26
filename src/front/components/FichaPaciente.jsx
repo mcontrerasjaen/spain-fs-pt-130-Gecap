@@ -421,36 +421,35 @@ export const FichaPaciente = () => {
                                 {!editando ? (
                                     <>
                                         <button
-                                            className="btn shadow-sm text-white px-4 fw-bold d-flex align-items-center justify-content-center"
-                                            style={{ backgroundColor: "#93bbbf", borderRadius: "50px", height: "50px", minWidth: "180px", border: "none" }}
+                                            className="btn btn-sm shadow-sm text-white px-3 d-flex align-items-center"
+                                            style={{ backgroundColor: "#93bbbf", borderRadius: "8px", height: "38px", border: "none", fontSize: "0.9rem" }}
                                             onClick={() => navigate("/healthform", { state: { pacienteAEditar: p } })}
                                         >
-                                            <i className="fas fa-edit me-2"></i> EDITAR FICHA
+                                            <i className="fas fa-edit me-2"></i> Editar
                                         </button>
 
                                         <button
-                                            className="btn shadow-sm text-white px-4 fw-bold d-flex align-items-center justify-content-center"
-                                            style={{ backgroundColor: "#566873", borderRadius: "50px", height: "50px", minWidth: "180px", border: "none" }}
+                                            className="btn btn-sm shadow-sm text-white px-3 d-flex align-items-center"
+                                            style={{ backgroundColor: "#566873", borderRadius: "8px", height: "38px", border: "none", fontSize: "0.9rem" }}
                                             onClick={() => window.print()}
                                         >
-                                            <i className="fas fa-print me-2"></i> INFORME
+                                            <i className="fas fa-print me-2"></i> Informe
                                         </button>
 
-                                        {/* BOTÓN ELIMINAR RECUPERADO */}
                                         <button
-                                            className="btn btn-outline-danger shadow-sm px-4 fw-bold d-flex align-items-center justify-content-center"
-                                            style={{ borderRadius: "50px", height: "50px", minWidth: "180px", borderWidth: "2px" }}
+                                            className="btn btn-sm btn-outline-danger shadow-sm px-3 d-flex align-items-center"
+                                            style={{ borderRadius: "8px", height: "38px", fontSize: "0.9rem", borderWidth: "1px" }}
                                             onClick={() => handleEliminarDesdeFicha(p.id)}
                                         >
-                                            <i className="fas fa-trash-alt me-2"></i> ELIMINAR
+                                            <i className="fas fa-trash-alt me-2"></i> Eliminar
                                         </button>
 
                                         <button
-                                            className="btn shadow-sm text-white px-4 fw-bold d-flex align-items-center justify-content-center"
-                                            style={{ backgroundColor: "#e8888c", borderRadius: "50px", height: "50px", minWidth: "200px", border: "none" }}
+                                            className="btn btn-sm shadow-sm text-white px-3 d-flex align-items-center"
+                                            style={{ backgroundColor: "#e8888c", borderRadius: "8px", height: "38px", border: "none", fontSize: "0.9rem" }}
                                             onClick={() => navigate("/areapersonal", { state: { pacienteId: p.id, nombre: p.nombre } })}
                                         >
-                                            <i className="fas fa-calendar-plus me-2"></i> NUEVA CONSULTA
+                                            <i className="fas fa-calendar-plus me-2"></i> Nueva Consulta
                                         </button>
                                     </>
                                 ) : (

@@ -230,6 +230,8 @@ def update_patient(id):
         paciente.apellidos = data.get("apellidos", paciente.apellidos)
         paciente.email = data.get("email", paciente.email)
         paciente.telefono = data.get("telefono", paciente.telefono)
+        paciente.direccion = data.get("direccion", paciente.direccion)
+        paciente.ciudad = data.get("ciudad", paciente.ciudad)
         paciente.nacimiento = data.get("nacimiento", paciente.nacimiento)
         paciente.dni = data.get("dni", paciente.dni)
         
@@ -258,8 +260,7 @@ def update_patient(id):
         return jsonify(paciente.serialize()), 200
 
     except Exception as e:
-        db.session.rollback()
-        # Esto imprimirá el error real en tu terminal para que lo veas
+        db.session.rollback()        
         print(f"Error detectado: {str(e)}") 
         return jsonify({"msg": "Error al actualizar", "error": str(e)}), 500
 
