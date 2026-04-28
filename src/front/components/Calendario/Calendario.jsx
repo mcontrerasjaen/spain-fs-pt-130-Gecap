@@ -81,35 +81,44 @@ function Calendario({ onAgregarCita, onEliminarCita, pacienteHoy, onActualizarCi
         if (onAgregarCita) onAgregarCita(nuevaCita);
     };
 
-    const handleEliminarCitaLocal = async (idCita) => {
-        if (onEliminarCita) {
-            await onEliminarCita(idCita);
+    const handleEliminarCitaLocal = async (e, idCita) => {        
+        const realEvent = e?.originalEvent || e;
+
+        if (realEvent && typeof realEvent.preventDefault === 'function') {
+            realEvent.preventDefault();
+            realEvent.stopPropagation();
         }
 
-        setCitas(prevCitas => prevCitas.filter(cita => (cita.id || cita.appointment_id) !== idCita));
+        const idParaEliminar = idCita || e;
+
+        if (onEliminarCita) {
+            await onEliminarCita(idParaEliminar);
+        }
+
+        setCitas(prevCitas => prevCitas.filter(cita => (cita.id || cita.appointment_id) != idParaEliminar));
     };
 
     const eliminarMensaje = async (idMensaje) => {
-    const token = localStorage.getItem("token");
-    try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/messages/${idMensaje}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            }
-        });
+        const token = localStorage.getItem("token");
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/messages/${idMensaje}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
 
-        if (response.ok) {           
-            setMensajesWeb(prevMensajes => prevMensajes.filter(msg => msg.id !== idMensaje));
-            console.log("Mensaje eliminado con éxito");
-        } else {
-            console.error("Error al eliminar el mensaje del servidor");
+            if (response.ok) {
+                setMensajesWeb(prevMensajes => prevMensajes.filter(msg => msg.id !== idMensaje));
+                console.log("Mensaje eliminado con éxito");
+            } else {
+                console.error("Error al eliminar el mensaje del servidor");
+            }
+        } catch (error) {
+            console.error("Error en la petición DELETE:", error);
         }
-    } catch (error) {
-        console.error("Error en la petición DELETE:", error);
-    }
-};
+    };
 
     return (
         <div className="mt-2">
@@ -198,7 +207,7 @@ function Calendario({ onAgregarCita, onEliminarCita, pacienteHoy, onActualizarCi
                                                             <button
                                                                 className="btn btn-sm text-white fw-bold shadow-sm"
                                                                 style={{ backgroundColor: "#93bbbf", borderRadius: "8px" }}
-                                                                onClick={() => {                                                                   
+                                                                onClick={() => {
                                                                     setDatosParaCita({
                                                                         nombre: msg.full_name,
                                                                         dni: msg.dni,
@@ -206,13 +215,13 @@ function Calendario({ onAgregarCita, onEliminarCita, pacienteHoy, onActualizarCi
                                                                         motivo: msg.reason,
                                                                         message_id: msg.id
                                                                     });
-                                                                    
+
                                                                     setSolicitarNuevaCita(true);
-                                                                    
+
                                                                     const modalElement = document.getElementById('modalMensajesWeb');
                                                                     const modalInstance = bootstrap.Modal.getInstance(modalElement);
                                                                     if (modalInstance) modalInstance.hide();
-                                                                    
+
                                                                     setTimeout(() => {
                                                                         if (window.confirm(`¿Deseas eliminar la solicitud de ${msg.full_name} de esta lista?`)) {
                                                                             eliminarMensaje(msg.id);

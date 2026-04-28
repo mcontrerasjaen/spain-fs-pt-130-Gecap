@@ -170,7 +170,7 @@ const CitasPorDia = ({
         cellDuration: 30,
 
         onEventClick: (args) => {
-            const citaId = args.e.id();            
+            const citaId = args.e.id();
             navigate(`/ficha-paciente/${citaId}`);
         },
 
@@ -183,14 +183,19 @@ const CitasPorDia = ({
             }));
             setShowModal(true);
         },
-       onBeforeEventRender: args => {            
-            args.data.cursor = "pointer";            
+        onBeforeEventRender: args => {
+            args.data.cursor = "pointer";
             args.data.areas = [{
                 right: 5, top: 8, width: 18, height: 18, text: "X",
                 style: "cursor:pointer; background:rgba(0,0,0,0.2); border-radius:50%; color:white; text-align:center;",
-                onClick: (e) => {
-                    e.preventDefault(); 
-                    onEliminarCita(e.source.id());
+                onClick: (args) => {
+                    // 1. Esto detiene el evento de DayPilot para que no se seleccione la cita ni navegue
+                    args.originalEvent.preventDefault();
+                    args.originalEvent.stopPropagation();
+
+                    // 2. Llamamos a la función de eliminar pasando el ID
+                    // DayPilot usa .id() para obtener el identificador de la cita
+                    onEliminarCita(args.source.id());
                 }
             }];
         }

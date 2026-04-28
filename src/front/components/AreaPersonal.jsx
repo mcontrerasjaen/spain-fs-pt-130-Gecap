@@ -64,10 +64,11 @@ function AreaPersonal() {
             });
 
             if (response.ok) {
-                setPacientesHoy(prev => prev.filter(p => p.id !== id));
+                
+                setPacientesHoy(prev => prev.filter(p => (p.appointment_id || p.id) != id));
             }
         } catch (error) {
-            console.log("Error al eliminar:", error);
+            console.error("Error al eliminar:", error);
         }
     };
 
@@ -109,8 +110,8 @@ function AreaPersonal() {
     const proximaCita = proximasCitas[0] || null;
 
     return (
-         <div className="container-fluid p-0"> {/* Quita el minHeight aquí */}
-        <div className="card border-0 shadow-sm" style={{ borderRadius: "15px", overflow: "hidden" }}>
+        <div className="container-fluid p-0">
+            <div className="card border-0 shadow-sm" style={{ borderRadius: "15px", overflow: "hidden" }}>
                 <div style={{ height: "6px", backgroundColor: "#93bbbf" }}></div>
 
                 <div className="card-body py-2 px-1">
@@ -132,7 +133,7 @@ function AreaPersonal() {
                         <div className="text-end">
                             <p className="text-muted mb-0" style={{ fontSize: "1.3rem" }}>
                                 Bienvenido/a, <span className="fw-bold" style={{ color: "#4a5568" }}>
-                                   
+
                                     {nombreDoctor}!
                                 </span>
                             </p>
