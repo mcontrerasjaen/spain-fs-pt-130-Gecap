@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import favicon from "../../assets/img/favicon.png"; 
+import favicon from "../assets/img/favicon.png";
 
 export const Navbar = () => {
     return (
