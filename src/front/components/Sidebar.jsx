@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { ListadoMedicos } from "./ListadoMedicos";
+import favicon from "../assets/img/favicon.png"; 
 
 export const Sidebar = () => {
     const location = useLocation();
@@ -31,10 +32,10 @@ export const Sidebar = () => {
             style={{ width: "260px", height: "100vh", backgroundColor: "#566873", color: "#ebf2f1", position: "sticky", top: 0 }}>
 
             <div className="d-flex justify-content-center align-items-center mb-2 mt-2 w-100">
-                <img
-                    src="/src/front/assets/img/favicon.png"
-                    alt="favicon GECAP"
-                    style={{ width: "100px", height: "auto", objectFit: "contain" }}
+                 <img
+                    src={favicon}
+                    alt="Logo GECAP"
+                    style={{ width: "40px", height: "auto", marginBottom: "10px" }} 
                 />
             </div>
 
