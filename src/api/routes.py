@@ -373,18 +373,19 @@ def create_external_appointment():
         db.session.flush()
 
     try:
-       
         nueva_cita = Appointment(
             patient_id=paciente.patient_id,
-            reason=f"SOLICITUD EXTERNA: {motivo}",
-            date=None, # El médico le pondrá fecha después
-            start=None
+            reason=f"SOLICITUD EXTERNA: {motivo}",            
+            date="2026-01-01",  
+            start="00:00",      
+            user_id=1          
         )
         db.session.add(nueva_cita)
         db.session.commit()
         return jsonify({"msg": "Solicitud recibida correctamente"}), 201
     except Exception as e:
-        db.session.rollback()
+        db.session.rollback()        
+        print(f"DEBUG: Error al guardar en Render: {str(e)}")
         return jsonify({"msg": "Error", "error": str(e)}), 500
 
 
