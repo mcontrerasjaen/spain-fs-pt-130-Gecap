@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import favicon from "../../assets/img/favicon.png"; 
 
 export const Navbar = () => {
     return (
@@ -8,7 +9,7 @@ export const Navbar = () => {
             <div className="container-fluid">
 
                 <Link className="navbar-brand d-flex align-items-center" to="/">
-                    <img src="src/front/assets/img/favicon.png" alt="Logo" width="40" className="me-2" />
+                     <img src={favicon} alt="Logo" style={{ width: "30px", marginRight: "10px" }} />
                     <span style={{ color: "#ebf2f1", fontWeight: "bold", letterSpacing: "1px" }}>GECAP</span>
                 </Link>
 
