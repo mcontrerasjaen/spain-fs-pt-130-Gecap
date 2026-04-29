@@ -350,43 +350,48 @@ def create_appointment():
         print(f"ERROR EN BASE DE DATOS: {str(e)}") 
         return jsonify({"msg": "Error al guardar en base de datos", "error": str(e)}), 500
     
-@api.route('/external-appointment', methods=['POST']) 
+@api.route('/external-appointment', methods=['POST'])
 def create_external_appointment():
     data = request.json
-        
     nombre = data.get("nombre")
     dni = data.get("dni")
     telefono = data.get("telefono")
-    motivo = data.get("motivo")
+    motivo = data.get("motivo", "Consulta General")
 
     if not nombre or not telefono:
         return jsonify({"msg": "Nombre y teléfono son obligatorios"}), 400
-   
-    paciente = Patient.query.filter_by(dni=dni).first() if dni else None
-    if not paciente:
-        paciente = Patient(
-            nombre=nombre,
-            dni=dni if dni else f"EXT-{telefono}",
-            telefono=telefono
-        )
-        db.session.add(paciente)
-        db.session.flush()
 
     try:
+       
+        paciente = None
+        if dni:
+            paciente = Patient.query.filter_by(dni=dni).first()
+        if not paciente:
+            paciente = Patient(
+                nombre=nombre,
+                dni=dni if dni else f"EXT-{telefono}",
+                telefono=telefono
+            )
+            db.session.add(paciente)
+            db.session.flush()
+       
         nueva_cita = Appointment(
             patient_id=paciente.patient_id,
             reason=f"SOLICITUD EXTERNA: {motivo}",            
-            date="2026-01-01",  
-            start="00:00",      
-            user_id=1          
+            date="2026-01-01", 
+            start="09:00",      
+            end="09:30",        
+            user_id=1           
         )
+        
         db.session.add(nueva_cita)
         db.session.commit()
-        return jsonify({"msg": "Solicitud recibida correctamente"}), 201
+        return jsonify({"msg": "Solicitud recibida"}), 201
+
     except Exception as e:
         db.session.rollback()        
-        print(f"DEBUG: Error al guardar en Render: {str(e)}")
-        return jsonify({"msg": "Error", "error": str(e)}), 500
+        print(f"DEBUG_ERROR: {str(e)}")
+        return jsonify({"msg": "Error en DB", "error": str(e)}), 500
 
 
 @api.route('/appointment/<int:appointment_id>', methods=['PUT'])
