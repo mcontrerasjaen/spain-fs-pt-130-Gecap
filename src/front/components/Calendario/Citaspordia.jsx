@@ -80,6 +80,7 @@ const CitasPorDia = ({
                 telefono: "",
                 motivo: "",
                 otroMotivo: "",
+                date: inicioDefecto.toString("yyyy-MM-dd"),
                 hora: "10:00",
                 patient_id: null,
                 message_id: null
@@ -112,15 +113,15 @@ const CitasPorDia = ({
         const motivoFinal = formData.motivo === "Otro" ? formData.otroMotivo : formData.motivo;
         const citaParaEnviar = {
             patient_id: formData.patient_id,
-            message_id: formData.message_id,
             nombre: formData.nombre,
-            dni: formData.dni || "12345678Z",
             telefono: formData.telefono,
-            fecha: formData.fecha || selectedRange.start.toString("yyyy-MM-dd"),
+            date: formData.date || selectedRange.start.toString("yyyy-MM-dd"),
+            start: `${formData.date || selectedRange.start.toString("yyyy-MM-dd")}T${formData.hora}:00`,
+            end: `${formData.date || selectedRange.start.toString("yyyy-MM-dd")}T${formData.hora}:30`,
             hora: formData.hora || selectedRange.start.toString("HH:mm"),
-            motivo: motivoFinal,
-            start: selectedRange.start.toString(),
-            end: selectedRange.end ? selectedRange.end.toString() : selectedRange.start.addMinutes(30).toString()
+            reason: formData.motivo === "Otro" ? formData.otroMotivo : formData.motivo,
+            user_id: store.user?.id || 1,
+            status: "pendiente"
         };
 
         try {
@@ -159,6 +160,8 @@ const CitasPorDia = ({
     const config = {
         viewType: "Day",
         locale: "es-es",
+        timeZone: "local",
+        timeRangeSelectedHandling: "Enabled",
         timeFormat: "Clock24Hours",
         heightSpec: "BusinessHours",
         businessBeginsHour: 8,
@@ -179,7 +182,7 @@ const CitasPorDia = ({
             setFormData(prev => ({
                 ...prev,
                 hora: args.start.toString("HH:mm"),
-                fecha: args.start.toString("yyyy-MM-dd")
+                date: args.start.toString("yyyy-MM-dd")
             }));
             setShowModal(true);
         },
@@ -189,12 +192,8 @@ const CitasPorDia = ({
                 right: 5, top: 8, width: 18, height: 18, text: "X",
                 style: "cursor:pointer; background:rgba(0,0,0,0.2); border-radius:50%; color:white; text-align:center;",
                 onClick: (args) => {
-                    // 1. Esto detiene el evento de DayPilot para que no se seleccione la cita ni navegue
                     args.originalEvent.preventDefault();
                     args.originalEvent.stopPropagation();
-
-                    // 2. Llamamos a la función de eliminar pasando el ID
-                    // DayPilot usa .id() para obtener el identificador de la cita
                     onEliminarCita(args.source.id());
                 }
             }];
@@ -202,11 +201,11 @@ const CitasPorDia = ({
     };
 
     const formularioValido =
-        formData.nombre?.trim() !== "" &&
-        formData.telefono?.trim().length >= 9 &&
-        formData.fecha !== "" &&
-        formData.hora !== "" &&
-        formData.motivo !== "";
+        (formData.nombre && formData.nombre.trim() !== "") &&
+        (formData.telefono && formData.telefono.trim().length >= 9) &&
+        (formData.date || selectedRange?.start) &&
+        (formData.hora && formData.hora !== "") &&
+        (formData.motivo && formData.motivo !== "");
 
     return (
         <div className="mt-3 border rounded shadow-sm overflow-hidden">
@@ -367,9 +366,9 @@ const CitasPorDia = ({
                             <button
                                 className="btn w-100 fw-bold text-white py-2 shadow-sm"
                                 style={{
-                                    backgroundColor: formularioValido ? "#28a745" : "#93bbbf", // Cambia a verde si es válido
+                                    backgroundColor: formularioValido ? "#28a745" : "#93bbbf",
                                     borderRadius: "12px",
-                                    transition: "background-color 0.4s ease" // Para que el cambio de color sea suave
+                                    transition: "background-color 0.4s ease"
                                 }}
                                 onClick={handleGuardarCita}
                             >
