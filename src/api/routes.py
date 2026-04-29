@@ -304,9 +304,8 @@ def get_appointment(appointment_id):
 @jwt_required()
 def create_appointment():
     data = request.json
-    current_user_id = get_jwt_identity()
+    current_user_id = get_jwt_identity()    
     
-    # 1. Extraer datos asegurando que no sean None (Buscamos ambos nombres: inglés y español)
     fecha_final = data.get("date") or data.get("fecha")
     hora_final = data.get("start") or data.get("hora")
     motivo_final = data.get("reason") or data.get("motivo") or "Consulta General"
@@ -315,12 +314,10 @@ def create_appointment():
     nombre = data.get("nombre")
     dni = data.get("dni")
     telefono = data.get("telefono")
-
-    # 2. Validación de seguridad: si no hay fecha, devolvemos error antes de tocar la DB
+   
     if not fecha_final:
         return jsonify({"msg": "La fecha es obligatoria y no llegó al servidor"}), 400
 
-    # 3. Lógica de Paciente (Tu código original mejorado)
     if not patient_id and nombre:        
         existente = Patient.query.filter_by(nombre=nombre).first()
         if existente:
@@ -332,18 +329,17 @@ def create_appointment():
                 dni=dni if dni else f"TEMP-{telefono}"
             )
             db.session.add(nuevo_paciente)
-            db.session.flush() # flush() genera el ID sin cerrar la transacción
+            db.session.flush() 
             patient_id = nuevo_paciente.patient_id    
-    
-    # 4. Crear la Cita
+       
     try:
         nueva_cita = Appointment(
             patient_id=patient_id, 
             message_id=data.get("message_id"), 
             user_id=current_user_id,
-            date=data.get("date"),   # El '2026-04-30' que enviamos
+            date=data.get("date"),   
             start=data.get("start"), 
-            end=data.get("end") or hora_final, # Si no hay end, usamos la misma hora
+            end=data.get("end") or hora_final, 
             reason=motivo_final
         )
         db.session.add(nueva_cita)
@@ -353,6 +349,43 @@ def create_appointment():
         db.session.rollback()        
         print(f"ERROR EN BASE DE DATOS: {str(e)}") 
         return jsonify({"msg": "Error al guardar en base de datos", "error": str(e)}), 500
+    
+@api.route('/external-appointment', methods=['POST']) 
+def create_external_appointment():
+    data = request.json
+        
+    nombre = data.get("nombre")
+    dni = data.get("dni")
+    telefono = data.get("telefono")
+    motivo = data.get("motivo")
+
+    if not nombre or not telefono:
+        return jsonify({"msg": "Nombre y teléfono son obligatorios"}), 400
+   
+    paciente = Patient.query.filter_by(dni=dni).first() if dni else None
+    if not paciente:
+        paciente = Patient(
+            nombre=nombre,
+            dni=dni if dni else f"EXT-{telefono}",
+            telefono=telefono
+        )
+        db.session.add(paciente)
+        db.session.flush()
+
+    try:
+       
+        nueva_cita = Appointment(
+            patient_id=paciente.patient_id,
+            reason=f"SOLICITUD EXTERNA: {motivo}",
+            date=None, # El médico le pondrá fecha después
+            start=None
+        )
+        db.session.add(nueva_cita)
+        db.session.commit()
+        return jsonify({"msg": "Solicitud recibida correctamente"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Error", "error": str(e)}), 500
 
 
 @api.route('/appointment/<int:appointment_id>', methods=['PUT'])

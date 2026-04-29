@@ -20,7 +20,11 @@ export const Home = () => {
 
 			if (response.ok) {
 				alert("¡Solicitud enviada con éxito! El médico contactará contigo pronto.");
-				setSolicitud({ nombre: "", telefono: "", motivo: "Control Rutinario" });
+				setSolicitud({ 
+					nombre: "", 
+					telefono: "", 
+					dni: "", 
+					motivo: "Control Rutinario" });
 
 				const modalElement = document.getElementById('citaRapidaModal');
 				const modal = bootstrap.Modal.getInstance(modalElement);
